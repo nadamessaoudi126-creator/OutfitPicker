@@ -1,0 +1,294 @@
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+:root {
+    --primary: #302720;
+    --accent: #b68b67;
+    --background: #faf8f5;
+    --white: #ffffff;
+    --text: #302720;
+    --muted: #77716c;
+    --border: #e8e1da;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--background);
+    color: var(--text);
+    line-height: 1.6;
+}
+
+h1, h2, h3 {
+    font-family: 'Playfair Display', serif;
+}
+
+/* Navigation */
+
+header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+nav {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+nav h1 {
+    font-size: 27px;
+    color: var(--primary);
+}
+
+nav div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 25px;
+}
+
+nav a {
+    text-decoration: none;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+nav a:hover {
+    color: var(--accent);
+}
+
+/* Sections */
+
+section {
+    max-width: 1100px;
+    margin: 65px auto;
+    padding: 35px;
+}
+
+section h2 {
+    font-size: 34px;
+    margin-bottom: 12px;
+}
+
+section p {
+    color: var(--muted);
+    margin-bottom: 25px;
+}
+
+/* Accueil */
+
+#accueil {
+    max-width: none;
+    min-height: 430px;
+    margin: 0;
+    padding: 100px 25px;
+    text-align: center;
+    background: linear-gradient(135deg, #f0e5d9, #faf8f5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#accueil h2 {
+    font-size: clamp(34px, 5vw, 55px);
+}
+
+#accueil p {
+    font-size: 18px;
+}
+
+#accueil a {
+    display: inline-block;
+    padding: 14px 28px;
+    background: var(--primary);
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+#accueil a:hover {
+    background: var(--accent);
+}
+
+/* Formulaire */
+
+#clothingForm {
+    background: var(--white);
+    padding: 30px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 35px;
+}
+
+input, select {
+    width: 100%;
+    padding: 13px 15px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    font-family: inherit;
+    font-size: 15px;
+}
+
+input:focus, select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+label {
+    font-weight: 600;
+    align-self: center;
+}
+
+button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 25px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 15px;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: var(--accent);
+}
+
+#clothingForm button {
+    grid-column: 1 / -1;
+}
+
+/* Garde-robe */
+
+#listeVetements {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 20px;
+}
+
+.vetement-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    padding-bottom: 15px;
+}
+
+.vetement-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+}
+
+.vetement-card h3,
+.vetement-card p {
+    margin: 10px 15px;
+}
+
+.vetement-card button {
+    margin: 5px 15px;
+}
+
+/* Événements */
+
+#evenements {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+#evenement {
+    max-width: 400px;
+    display: block;
+    margin-bottom: 20px;
+}
+
+#resultatTenue {
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+#resultatTenue img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+#resultatTenue h3 {
+    grid-column: 1 / -1;
+}
+
+/* Pied de page */
+
+footer {
+    text-align: center;
+    background: var(--primary);
+    color: white;
+    padding: 25px;
+    margin-top: 60px;
+}
+
+/* Adaptation mobile */
+
+@media (max-width: 650px) {
+    nav {
+        flex-direction: column;
+        padding: 15px;
+    }
+
+    nav div {
+        justify-content: center;
+        gap: 15px;
+    }
+
+    section {
+        margin: 25px 12px;
+        padding: 20px;
+    }
+
+    #accueil {
+        margin: 0;
+        padding: 70px 20px;
+    }
+
+    #clothingForm {
+        grid-template-columns: 1fr;
+        padding: 20px;
+    }
+
+    #clothingForm button {
+        grid-column: 1;
+    }
+
+    section h2 {
+        font-size: 28px;
+    }
+}

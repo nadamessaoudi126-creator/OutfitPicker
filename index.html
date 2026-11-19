@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OutfitPicker - Smart Outfit Planner</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <nav>
+            <h1>OutfitPicker</h1>
+            <div>
+                <a href="#accueil">Accueil</a>
+                <a href="#garde-robe">Ma garde-robe</a>
+                <a href="#evenements">Choisir ma tenue</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="accueil">
+            <h2>Bienvenue sur OutfitPicker</h2>
+            <p>Votre garde-robe intelligente pour chaque occasion.</p>
+            <a href="#garde-robe">Découvrir ma garde-robe</a>
+        </section>
+
+        <section id="garde-robe">
+            <h2>Ma garde-robe</h2>
+            <p>Ajoutez vos vêtements et organisez votre collection.</p>
+
+            <form id="clothingForm">
+                <input type="text" id="nom" placeholder="Nom du vêtement" required>
+
+                <select id="categorie" required>
+                    <option value="">Choisir une catégorie</option>
+                    <option value="haut">Haut</option>
+                    <option value="bas">Pantalon / Bas</option>
+                    <option value="chaussures">Chaussures</option>
+                    <option value="veste">Veste</option>
+                </select>
+
+                <select id="couleur" required>
+                    <option value="">Choisir une couleur</option>
+                    <option value="blanc">Blanc</option>
+                    <option value="noir">Noir</option>
+                    <option value="bleu">Bleu</option>
+                    <option value="gris">Gris</option>
+                    <option value="beige">Beige</option>
+                    <option value="rouge">Rouge</option>
+                </select>
+
+                <select id="style" required>
+                    <option value="">Choisir un style</option>
+                    <option value="casual">Casual</option>
+                    <option value="chic">Chic</option>
+                    <option value="professionnel">Professionnel</option>
+                    <option value="sportif">Sportif</option>
+                </select>
+
+                <label for="photo">Photo du vêtement</label>
+                <input type="file" id="photo" accept="image/*" required>
+
+                <button type="submit">Ajouter le vêtement</button>
+            </form>
+
+            <div id="listeVetements"></div>
+        </section>
+
+        <section id="evenements">
+            <h2>Choisir une tenue</h2>
+            <p>Sélectionnez votre événement.</p>
+
+            <select id="evenement">
+                <option value="universite">Université</option>
+                <option value="mariage">Mariage</option>
+                <option value="entretien">Entretien d'embauche</option>
+                <option value="sport">Sport</option>
+                <option value="sortie">Sortie entre amis</option>
+            </select>
+
+            <button id="genererTenue">Générer ma tenue</button>
+
+            <div id="resultatTenue"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2026 OutfitPicker - Projet Cloud Azure</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
