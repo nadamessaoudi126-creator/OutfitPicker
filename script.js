@@ -1,258 +1,540 @@
+"use strict";
 
-const DB_NAME = "OutfitPickerDB";
-const STORE_NAME = "vetements";
-let database;
+// ==========================================
+// CONFIGURATION AZURE
+// ==========================================
 
-// 1. Initialiser IndexedDB
-function ouvrirDatabase() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 1);
+const API_BASE = "https://func-outfitpicker-2026-fzh9g5aza5dmbja5.belgiumcentral-01.azurewebsites.net/api";
 
-        request.onupgradeneeded = (event) => {
-            const db = event.target.result;
+let gardeRobe = [];
+let derniereTenue = null;
 
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME, {
-                    keyPath: "id",
-                    autoIncrement: true
-                });
-            }
-        };
+// ==========================================
+// OUTILS
+// ==========================================
 
-        request.onsuccess = () => {
-            database = request.result;
-            resolve(database);
-        };
+function normaliserCategorie(categorie) {
+    const valeur = String(categorie || "")
+        .trim()
+        .toLowerCase();
 
-        request.onerror = () => reject(request.error);
-    });
+    const correspondances = {
+        haut: "haut",
+        bas: "bas",
+        pantalon: "bas",
+        chaussure: "chaussures",
+        chaussures: "chaussures",
+        veste: "veste"
+    };
+
+    return correspondances[valeur] || valeur;
 }
 
-// 2. Récupérer tous les vêtements
-function obtenirVetements() {
-    return new Promise((resolve, reject) => {
-        const transaction = database.transaction(
-            STORE_NAME, "readonly"
-        );
-
-        const request = transaction
-            .objectStore(STORE_NAME)
-            .getAll();
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
+function urlPhoto(filename) {
+    return `${API_BASE}/photo/${encodeURIComponent(filename)}`;
 }
 
-// 3. Ajouter un vêtement
-function ajouterVetement(vetement) {
-    return new Promise((resolve, reject) => {
-        const transaction = database.transaction(
-            STORE_NAME, "readwrite"
-        );
-
-        const request = transaction
-            .objectStore(STORE_NAME)
-            .add(vetement);
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
-
-// 4. Supprimer un vêtement
-function supprimerVetement(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = database.transaction(
-            STORE_NAME, "readwrite"
-        );
-
-        const request = transaction
-            .objectStore(STORE_NAME)
-            .delete(id);
-
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-    });
-}
-
-// 5. Afficher la garde-robe
-async function afficherVetements() {
-    const vetements = await obtenirVetements();
-    const liste = document.getElementById("listeVetements");
-
-    liste.innerHTML = "";
-
-    if (vetements.length === 0) {
-        liste.textContent = "Votre garde-robe est vide.";
-        return;
-    }
-
-    vetements.forEach((vetement) => {
-        const card = document.createElement("div");
-        card.className = "vetement-card";
-
-        const image = document.createElement("img");
-        image.src = URL.createObjectURL(vetement.photo);
-        image.alt = vetement.nom;
-        image.onload = () => URL.revokeObjectURL(image.src);
-
-        const titre = document.createElement("h3");
-        titre.textContent = vetement.nom;
-
-        const description = document.createElement("p");
-        description.textContent =
-            `${vetement.categorie} - ${vetement.couleur} - ${vetement.style}`;
-
-        const bouton = document.createElement("button");
-        bouton.textContent = "Supprimer";
-
-        bouton.addEventListener("click", async () => {
-            await supprimerVetement(vetement.id);
-            await afficherVetements();
-        });
-
-        card.append(image, titre, description, bouton);
-        liste.appendChild(card);
-    });
-}
-
-// 6. Enregistrer le formulaire
-document.getElementById("clothingForm")
-    .addEventListener("submit", async (event) => {
-        event.preventDefault();
-
-        const fichier = document.getElementById("photo").files[0];
-
-        if (!fichier || !fichier.type.startsWith("image/")) {
-            alert("Veuillez sélectionner une image valide.");
-            return;
-        }
-
-        const vetement = {
-            nom: document.getElementById("nom").value.trim(),
-            categorie: document.getElementById("categorie").value,
-            couleur: document.getElementById("couleur").value,
-            style: document.getElementById("style").value,
-            photo: fichier
-        };
-
-        try {
-            await ajouterVetement(vetement);
-            event.target.reset();
-            await afficherVetements();
-            alert("Vêtement ajouté avec succès !");
-        } catch (error) {
-            console.error(error);
-            alert("Erreur lors de l'enregistrement du vêtement.");
-        }
-    });
-
-// 7. Styles selon les événements
-const stylesEvenements = {
-    universite: ["casual"],
-    mariage: ["chic"],
-    entretien: ["professionnel", "chic"],
-    sport: ["sportif"],
-    sortie: ["casual", "chic"]
-};
-
-// 8. Générer une tenue
-async function genererTenue() {
-    const evenement = document.getElementById("evenement").value;
-    const styles = stylesEvenements[evenement];
-
-    const vetements = await obtenirVetements();
-
-    const compatibles = vetements.filter(
-        (vetement) => styles.includes(vetement.style)
+async function appelerAPI(route, options = {}) {
+    const reponse = await fetch(
+        `${API_BASE}/${route}`,
+        options
     );
 
-    const categories = ["haut", "bas", "chaussures"];
-    const selection = [];
+    if (!reponse.ok) {
+        const message = await reponse.text();
 
-    for (const categorie of categories) {
-        const options = compatibles.filter(
-            (vetement) => vetement.categorie === categorie
+        throw new Error(
+            message || `Erreur HTTP ${reponse.status}`
         );
+    }
 
-        if (options.length === 0) {
-            afficherErreur(
-                `Il manque un vêtement de catégorie "${categorie}" pour cet événement.`
-            );
+    const contenu = await reponse.text();
+
+    return contenu ? JSON.parse(contenu) : null;
+}
+
+// ==========================================
+// RECUPERER LA GARDE-ROBE AZURE
+// ==========================================
+
+async function obtenirVetements() {
+    return appelerAPI("liste-vetements");
+}
+
+// ==========================================
+// AFFICHER LES VETEMENTS
+// ==========================================
+
+async function afficherVetements() {
+    const liste = document.getElementById("listeVetements");
+
+    liste.textContent = "Chargement des vêtements...";
+
+    try {
+        gardeRobe = await obtenirVetements();
+
+        liste.replaceChildren();
+
+        if (gardeRobe.length === 0) {
+            liste.textContent = "Votre garde-robe est vide.";
             return;
         }
 
-        const choix = options[
-            Math.floor(Math.random() * options.length)
-        ];
+        gardeRobe.forEach((vetement) => {
+            const card = document.createElement("div");
+            card.className = "vetement-card";
 
-        selection.push(choix);
-    }
+            const image = document.createElement("img");
+            image.src = urlPhoto(vetement.photo);
+            image.alt = vetement.nom;
+            image.loading = "lazy";
 
-    afficherTenue(selection);
-}
+            const titre = document.createElement("h3");
+            titre.textContent = vetement.nom;
 
-// 9. Afficher la tenue générée
-function afficherTenue(selection) {
-    const resultat = document.getElementById("resultatTenue");
-    resultat.innerHTML = "";
+            const description = document.createElement("p");
 
-    const titre = document.createElement("h3");
-    titre.textContent = "Voici votre tenue recommandée !";
-    resultat.appendChild(titre);
+            description.textContent =
+                `${vetement.categorie} - ${vetement.couleur} - ${vetement.style}`;
 
-    selection.forEach((vetement) => {
-        const card = document.createElement("div");
-        card.className = "vetement-card";
+            const bouton = document.createElement("button");
 
-        const image = document.createElement("img");
-        image.src = URL.createObjectURL(vetement.photo);
-        image.alt = vetement.nom;
-        image.onload = () => URL.revokeObjectURL(image.src);
+            bouton.type = "button";
+            bouton.textContent = "Supprimer";
 
-        const nom = document.createElement("h3");
-        nom.textContent = vetement.nom;
+            bouton.addEventListener("click", async () => {
+                const confirmation = confirm(
+                    `Supprimer "${vetement.nom}" ?`
+                );
 
-        const details = document.createElement("p");
-        details.textContent =
-            `${vetement.couleur} - ${vetement.style}`;
+                if (!confirmation) {
+                    return;
+                }
 
-        card.append(image, nom, details);
-        resultat.appendChild(card);
-    });
+                bouton.disabled = true;
 
-    const bouton = document.createElement("button");
-    bouton.textContent = "Générer une autre tenue";
-    bouton.addEventListener("click", genererTenue);
+                try {
+                    await appelerAPI(
+                        `supprimer-vetement/${encodeURIComponent(vetement.id)}`,
+                        {
+                            method: "DELETE"
+                        }
+                    );
 
-    resultat.appendChild(bouton);
-}
+                    await afficherVetements();
 
-// 10. Afficher une erreur
-function afficherErreur(message) {
-    const resultat = document.getElementById("resultatTenue");
-    resultat.innerHTML = "";
+                    reinitialiserTenue();
 
-    const paragraphe = document.createElement("p");
-    paragraphe.textContent = message;
+                } catch (error) {
+                    console.error(error);
 
-    resultat.appendChild(paragraphe);
-}
+                    alert(
+                        "Impossible de supprimer le vêtement."
+                    );
 
-// 11. Initialiser l'application
-async function initialiserApplication() {
-    try {
-        await ouvrirDatabase();
-        await afficherVetements();
+                    bouton.disabled = false;
+                }
+            });
 
-        document.getElementById("genererTenue")
-            .addEventListener("click", genererTenue);
+            card.append(
+                image,
+                titre,
+                description,
+                bouton
+            );
+
+            liste.appendChild(card);
+        });
 
     } catch (error) {
         console.error(error);
-        alert("Impossible d'initialiser la base de données locale.");
+
+        liste.textContent =
+            "Impossible de charger la garde-robe depuis Azure.";
     }
 }
 
-initialiserApplication();
+// ==========================================
+// AJOUTER UN VETEMENT DANS AZURE
+// ==========================================
+
+async function enregistrerVetement(event) {
+    event.preventDefault();
+
+    const formulaire = event.currentTarget;
+
+    const fichier =
+        document.getElementById("photo").files[0];
+
+    if (!fichier) {
+        alert("Veuillez sélectionner une photo.");
+        return;
+    }
+
+    const formats = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+    if (!formats.includes(fichier.type)) {
+        alert("Format autorisé : JPG, PNG ou WEBP.");
+        return;
+    }
+
+    const bouton = formulaire.querySelector(
+        'button[type="submit"]'
+    );
+
+    bouton.disabled = true;
+    bouton.textContent = "Enregistrement...";
+
+    try {
+
+        // 1. Envoyer la photo vers Azure Blob Storage
+
+        const formData = new FormData();
+
+        formData.append("photo", fichier);
+
+        const upload = await appelerAPI(
+            "upload-vetement",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+        if (!upload || !upload.filename) {
+            throw new Error(
+                "Le backend n'a pas retourné le nom de la photo."
+            );
+        }
+
+        // 2. Préparer les informations du vêtement
+
+        const vetement = {
+            nom: document.getElementById("nom")
+                .value.trim(),
+
+            categorie: document.getElementById("categorie")
+                .value,
+
+            couleur: document.getElementById("couleur")
+                .value,
+
+            style: document.getElementById("style")
+                .value,
+
+            photo: upload.filename
+        };
+
+        // 3. Enregistrer dans Azure Table Storage
+
+        await appelerAPI(
+            "ajouter-vetement",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify(vetement)
+            }
+        );
+
+        // 4. Actualiser la garde-robe
+
+        formulaire.reset();
+
+        await afficherVetements();
+
+        reinitialiserTenue();
+
+        alert("Vêtement enregistré dans Azure !");
+
+    } catch (error) {
+        console.error(
+            "Erreur d'enregistrement :",
+            error
+        );
+
+        alert(
+            "Erreur d'enregistrement : " + error.message
+        );
+
+    } finally {
+        bouton.disabled = false;
+        bouton.textContent = "Ajouter le vêtement";
+    }
+}
+
+// ==========================================
+// GENERER UNE TENUE AVEC L'API PYTHON
+// ==========================================
+
+async function genererTenue() {
+
+    const evenement =
+        document.getElementById("evenement").value;
+
+    const bouton =
+        document.getElementById("genererTenue");
+
+    const boutonAutre =
+        document.getElementById("autreTenue");
+
+    bouton.disabled = true;
+    boutonAutre.disabled = true;
+
+    bouton.textContent = "Génération en cours...";
+
+    try {
+
+        // Appeler la fonction Azure suggestion_tenue
+
+        const resultat = await appelerAPI(
+            `suggestion-tenue?evenement=${encodeURIComponent(evenement)}`
+        );
+
+        const tenue = resultat.tenue;
+
+        if (
+            !tenue ||
+            !tenue.haut ||
+            !tenue.bas ||
+            !tenue.chaussures
+        ) {
+            throw new Error("Tenue incomplète");
+        }
+
+        // Convertir la réponse JSON en tableau
+
+        const selection = [
+            tenue.haut,
+            tenue.bas,
+            tenue.chaussures,
+            tenue.veste
+        ].filter(Boolean);
+
+        derniereTenue = selection;
+
+        // Afficher le collage
+
+        afficherTenue(selection);
+
+    } catch (error) {
+
+        console.error(
+            "Erreur de génération :",
+            error
+        );
+
+        afficherErreur(
+            "Impossible de générer une tenue complète. " +
+            "Vérifiez que vous avez un haut, un bas et " +
+            "des chaussures compatibles avec cet événement."
+        );
+
+    } finally {
+
+        bouton.disabled = false;
+        boutonAutre.disabled = false;
+
+        bouton.textContent = "Générer ma tenue";
+    }
+}
+
+// ==========================================
+// COLLAGE PINTEREST CLIQUABLE
+// ==========================================
+
+function afficherTenue(selection) {
+
+    const collage =
+        document.getElementById("collageTenue");
+
+    const details =
+        document.getElementById("detailsVetement");
+
+    const boutonAutre =
+        document.getElementById("autreTenue");
+
+    collage.replaceChildren();
+
+    details.replaceChildren();
+    details.hidden = true;
+
+    selection.forEach((vetement) => {
+
+        const categorie = normaliserCategorie(
+            vetement.categorie
+        );
+
+        // Créer un vêtement cliquable
+
+        const bouton = document.createElement("button");
+
+        bouton.type = "button";
+
+        bouton.className =
+            `collage-item ${categorie}`;
+
+        bouton.title = vetement.nom;
+
+        bouton.setAttribute(
+            "aria-label",
+            `Voir les détails de ${vetement.nom}`
+        );
+
+        // Récupérer la photo depuis Azure Blob Storage
+
+        const image = document.createElement("img");
+
+        image.src = urlPhoto(vetement.photo);
+        image.alt = vetement.nom;
+
+        bouton.appendChild(image);
+
+        // Afficher les détails au clic
+
+        bouton.addEventListener("click", () => {
+
+            afficherDetailsVetement(vetement);
+
+        });
+
+        collage.appendChild(bouton);
+
+    });
+
+    boutonAutre.hidden = false;
+}
+
+// ==========================================
+// DETAILS DU VETEMENT SELECTIONNE
+// ==========================================
+
+function afficherDetailsVetement(vetement) {
+
+    const details =
+        document.getElementById("detailsVetement");
+
+    details.replaceChildren();
+
+    const titre = document.createElement("h3");
+
+    titre.textContent = vetement.nom;
+
+    const categorie = document.createElement("p");
+
+    categorie.textContent =
+        `Catégorie : ${vetement.categorie}`;
+
+    const couleur = document.createElement("p");
+
+    couleur.textContent =
+        `Couleur : ${vetement.couleur}`;
+
+    const style = document.createElement("p");
+
+    style.textContent =
+        `Style : ${vetement.style}`;
+
+    details.append(
+        titre,
+        categorie,
+        couleur,
+        style
+    );
+
+    details.hidden = false;
+}
+
+// ==========================================
+// AFFICHER UNE ERREUR
+// ==========================================
+
+function afficherErreur(message) {
+
+    reinitialiserTenue();
+
+    const collage =
+        document.getElementById("collageTenue");
+
+    const paragraphe =
+        document.createElement("p");
+
+    paragraphe.textContent = message;
+
+    paragraphe.style.padding = "25px";
+
+    paragraphe.style.textAlign = "center";
+
+    collage.appendChild(paragraphe);
+}
+
+// ==========================================
+// REINITIALISER LA TENUE
+// ==========================================
+
+function reinitialiserTenue() {
+
+    document.getElementById("collageTenue")
+        .replaceChildren();
+
+    const details =
+        document.getElementById("detailsVetement");
+
+    details.replaceChildren();
+
+    details.hidden = true;
+
+    document.getElementById("autreTenue")
+        .hidden = true;
+
+    derniereTenue = null;
+}
+
+// ==========================================
+// INITIALISATION DE L'APPLICATION
+// ==========================================
+
+async function initialiserApplication() {
+
+    document.getElementById("clothingForm")
+        .addEventListener(
+            "submit",
+            enregistrerVetement
+        );
+
+    document.getElementById("genererTenue")
+        .addEventListener(
+            "click",
+            genererTenue
+        );
+
+    document.getElementById("autreTenue")
+        .addEventListener(
+            "click",
+            genererTenue
+        );
+
+    document.getElementById("evenement")
+        .addEventListener(
+            "change",
+            reinitialiserTenue
+        );
+
+    await afficherVetements();
+}
+
+// ==========================================
+// DEMARRAGE
+// ==========================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    initialiserApplication
+);

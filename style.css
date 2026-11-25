@@ -32,7 +32,7 @@ h1, h2, h3 {
     font-family: 'Playfair Display', serif;
 }
 
-/* Navigation */
+/* NAVIGATION */
 
 header {
     background: var(--white);
@@ -74,7 +74,7 @@ nav a:hover {
     color: var(--accent);
 }
 
-/* Sections */
+/* SECTIONS */
 
 section {
     max-width: 1100px;
@@ -92,7 +92,7 @@ section p {
     margin-bottom: 25px;
 }
 
-/* Accueil */
+/* ACCUEIL */
 
 #accueil {
     max-width: none;
@@ -129,7 +129,7 @@ section p {
     background: var(--accent);
 }
 
-/* Formulaire */
+/* FORMULAIRE */
 
 #clothingForm {
     background: var(--white);
@@ -179,11 +179,17 @@ button:hover {
     background: var(--accent);
 }
 
+button:focus-visible,
+a:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}
+
 #clothingForm button {
     grid-column: 1 / -1;
 }
 
-/* Garde-robe */
+/* GARDE-ROBE */
 
 #listeVetements {
     display: grid;
@@ -214,7 +220,7 @@ button:hover {
     margin: 5px 15px;
 }
 
-/* Événements */
+/* EVENEMENTS */
 
 #evenements {
     background: white;
@@ -228,25 +234,151 @@ button:hover {
     margin-bottom: 20px;
 }
 
+/* RESULTAT PINTEREST */
+
 #resultatTenue {
-    margin-top: 30px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 20px;
+    margin-top: 35px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
 }
 
-#resultatTenue img {
+.collage-tenue {
+    position: relative;
+    width: min(100%, 540px);
+    aspect-ratio: 4 / 5;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+/* Ne pas afficher de cadre vide avant génération */
+.collage-tenue:empty {
+    display: none;
+}
+
+/*
+   Les éléments seront créés par JavaScript.
+
+   Chaque vêtement possède :
+   - une position
+   - une taille
+   - un niveau de superposition
+*/
+
+.collage-item {
+    position: absolute;
+    display: block;
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    border-radius: 0;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.collage-item:hover {
+    background: transparent;
+    transform: scale(1.04);
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.12));
+}
+
+.collage-item:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.collage-item img {
+    display: block;
     width: 100%;
-    height: 220px;
-    object-fit: cover;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+/* Position du haut */
+
+.collage-item.haut {
+    width: 58%;
+    height: 45%;
+    left: 21%;
+    top: 5%;
+    z-index: 3;
+}
+
+/* Position du bas */
+
+.collage-item.bas {
+    width: 45%;
+    height: 48%;
+    left: 27.5%;
+    top: 35%;
+    z-index: 2;
+}
+
+/* Position des chaussures */
+
+.collage-item.chaussures {
+    width: 45%;
+    height: 35%;
+    left: 27.5%;
+    bottom: 2%;
+    z-index: 4;
+}
+
+/* Veste facultative */
+
+.collage-item.veste {
+    width: 64%;
+    height: 52%;
+    left: 18%;
+    top: 1%;
+    z-index: 5;
+}
+
+/* INFORMATIONS DU VETEMENT */
+
+.details-vetement {
+    width: min(100%, 540px);
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+}
+
+.details-vetement h3 {
+    margin-bottom: 10px;
+    font-size: 22px;
+}
+
+.details-vetement p {
+    margin-bottom: 7px;
+    color: var(--text);
+}
+
+.details-vetement[hidden],
+#autreTenue[hidden] {
+    display: none;
+}
+
+/* BOUTON AUTRE TENUE */
+
+#autreTenue {
+    background: var(--accent);
+    color: white;
+    padding: 14px 28px;
     border-radius: 10px;
 }
 
-#resultatTenue h3 {
-    grid-column: 1 / -1;
+#autreTenue:hover {
+    background: var(--primary);
 }
 
-/* Pied de page */
+/* PIED DE PAGE */
 
 footer {
     text-align: center;
@@ -256,7 +388,7 @@ footer {
     margin-top: 60px;
 }
 
-/* Adaptation mobile */
+/* ADAPTATION MOBILE */
 
 @media (max-width: 650px) {
     nav {
@@ -290,5 +422,13 @@ footer {
 
     section h2 {
         font-size: 28px;
+    }
+
+    .collage-tenue {
+        border-radius: 12px;
+    }
+
+    .details-vetement {
+        padding: 16px;
     }
 }
