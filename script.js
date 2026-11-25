@@ -44,7 +44,7 @@ async function appelerAPI(route, options = {}) {
         const message = await reponse.text();
 
         throw new Error(
-            message || `Erreur HTTP ${reponse.status}`
+            `Erreur ${reponse.status} : ${message || reponse.statusText || "réponse vide"}`
         );
     }
 
@@ -177,8 +177,20 @@ async function enregistrerVetement(event) {
         "image/webp"
     ];
 
-    if (!formats.includes(fichier.type)) {
-        alert("Format autorisé : JPG, PNG ou WEBP.");
+    const extensions = [".jpg", ".jpeg", ".png", ".webp"];
+
+    const nomFichier = fichier.name.toLowerCase();
+
+    const formatValide = fichier.type
+        ? formats.includes(fichier.type)
+        : extensions.some((ext) => nomFichier.endsWith(ext));
+
+    if (!formatValide) {
+        alert(
+            `Format non pris en charge (${fichier.type || fichier.name}). ` +
+            "Formats acceptés : JPG, PNG ou WEBP. " +
+            "Les photos HEIC (iPhone) doivent être converties en JPG."
+        );
         return;
     }
 
