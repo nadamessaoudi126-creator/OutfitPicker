@@ -1639,3 +1639,48 @@ select:focus {
     font-size: 13px;
     color: var(--muted);
 }
+
+/* =========================================
+   GEMINI : CE QUE L'IA A VU SUR LA PHOTO
+   ========================================= */
+
+.vu-par-gemini {
+    font-size: 13px;
+    color: var(--accent);
+    font-style: italic;
+    margin-top: -4px;
+    overflow-wrap: anywhere;
+}
+
+.details-vu-gemini {
+    margin-top: 4px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--sable-clair);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 14px;
+}
+
+.details-vu-titre {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.details-vu-gemini strong {
+    color: var(--primary);
+    text-transform: none;
+}
+
+.details-vu-gemini p {
+    color: var(--muted);
+}
+
+.details-formalite {
+    letter-spacing: 0.08em;
+}

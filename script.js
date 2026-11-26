@@ -373,6 +373,19 @@ function creerCarteVetement(vetement, index) {
 
     const titre = creerElement("h3", "", vetement.nom);
 
+    // Ce que Gemini a reconnu sur la photo
+    const vuParGemini = [];
+
+    if (vetement.analyse && vetement.analyse.type_precis) {
+        const vu = creerElement(
+            "p",
+            "vu-par-gemini",
+            `✦ ${vetement.analyse.type_precis}`
+        );
+        vu.title = "Reconnu par Gemini sur la photo";
+        vuParGemini.push(vu);
+    }
+
     const etiquettes = creerElement("div", "etiquettes");
     const categorie = normaliserCategorie(vetement.categorie);
     etiquettes.append(
@@ -424,7 +437,7 @@ function creerCarteVetement(vetement, index) {
         }
     });
 
-    infos.append(titre, etiquettes, bouton);
+    infos.append(titre, ...vuParGemini, etiquettes, bouton);
     card.append(cadre, infos);
 
     return card;
@@ -599,7 +612,7 @@ async function enregistrerVetement(event) {
 
         // 3. Enregistrer dans Azure Table Storage
 
-        await appelerAPI(
+        const ajout = await appelerAPI(
             "ajouter-vetement",
             {
                 method: "POST",
@@ -612,7 +625,29 @@ async function enregistrerVetement(event) {
             }
         );
 
-        // 4. Actualiser la garde-robe
+        // 4. Gemini analyse la photo (une seule fois).
+        //    Un échec ne bloque pas l'ajout : le vêtement est déjà enregistré.
+
+        if (ajout && ajout.id) {
+            libelle.textContent = "Gemini analyse la photo…";
+
+            try {
+                await appelerAPI(
+                    `analyser-vetement/${encodeURIComponent(ajout.id)}`,
+                    { method: "POST" }
+                );
+            } catch (erreurAnalyse) {
+                console.warn("Analyse de la photo impossible :", erreurAnalyse);
+
+                afficherToast(
+                    "Vêtement ajouté, mais Gemini n'a pas pu analyser la photo " +
+                    "pour le moment. Il se basera sur vos informations.",
+                    "erreur"
+                );
+            }
+        }
+
+        // 5. Actualiser la garde-robe
 
         formulaire.reset();
         mettreAJourApercu();
@@ -821,6 +856,10 @@ function messageErreurGeneration(error) {
         try {
             const corps = JSON.parse(error.corps || "{}");
             const details = corps.explication || corps.message;
+
+            if (details && corps.manque) {
+                return `${details} Il faudrait ajouter : ${corps.manque}.`;
+            }
 
             if (details) {
                 return details +
@@ -1079,6 +1118,41 @@ function afficherDetailsVetement(vetement) {
     });
 
     texte.append(surtitre, titre, liste);
+
+    // Fiche visuelle établie par Gemini à partir de la photo
+    const analyse = vetement.analyse;
+
+    if (analyse && (analyse.type_precis || analyse.description_courte)) {
+        const bloc = creerElement("div", "details-vu-gemini");
+
+        bloc.appendChild(
+            creerElement("span", "details-vu-titre", "✦ Vu par Gemini")
+        );
+
+        if (analyse.type_precis) {
+            bloc.appendChild(
+                creerElement("strong", "", analyse.type_precis)
+            );
+        }
+
+        if (analyse.description_courte) {
+            bloc.appendChild(
+                creerElement("p", "", analyse.description_courte)
+            );
+        }
+
+        if (analyse.formalite) {
+            bloc.appendChild(
+                creerElement(
+                    "p",
+                    "details-formalite",
+                    `Élégance : ${"●".repeat(analyse.formalite)}${"○".repeat(5 - analyse.formalite)}`
+                )
+            );
+        }
+
+        texte.appendChild(bloc);
+    }
     details.append(cadre, texte);
 
     details.hidden = false;
