@@ -9,7 +9,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=9">
 </head>
 
 <body>
@@ -185,14 +185,17 @@
                     <!-- STYLE -->
                     <div class="champ">
                         <label for="style">Style</label>
-                        <select id="style" required>
-                            <option value="">Choisir un style</option>
+                        <select id="style">
+                            <option value="auto">✦ Laisser Gemini décider</option>
                             <option value="casual">Casual</option>
                             <option value="chic">Chic</option>
                             <option value="professionnel">Professionnel</option>
                             <option value="sportif">Sportif</option>
                         </select>
                     </div>
+
+                    <!-- ÉTAT DE LA PRÉ-ANALYSE GEMINI -->
+                    <p id="statutAnalyse" class="statut-analyse" role="status" hidden></p>
 
                     <!-- BOUTON AJOUT -->
                     <button type="submit" class="bouton bouton-principal bouton-plein">
@@ -401,7 +404,7 @@
 
 
     <!-- JAVASCRIPT -->
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
 
 </body>
 </html>

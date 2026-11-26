@@ -1684,3 +1684,41 @@ select:focus {
 .details-formalite {
     letter-spacing: 0.08em;
 }
+
+/* =========================================
+   PRÉ-ANALYSE : CHAMPS SUGGÉRÉS PAR GEMINI
+   ========================================= */
+
+.statut-analyse {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--sable-clair);
+    border: 1px solid var(--border);
+    color: var(--primary);
+}
+
+.statut-analyse.succes {
+    border-color: var(--accent-doux);
+}
+
+.statut-analyse.erreur {
+    color: var(--muted);
+}
+
+.champ.suggere label::after {
+    content: " · ✦ suggéré par Gemini";
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.champ.suggere input,
+.champ.suggere select {
+    border-color: var(--accent-doux);
+    background-color: #fffdf9;
+}

@@ -10,6 +10,10 @@ let gardeRobe = [];
 let derniereTenue = null;
 let urlApercu = null;
 
+// Résultat de la pré-analyse Gemini de la photo choisie (réutilisé à l'ajout)
+let preAnalyse = null;
+let compteurPreAnalyse = 0;
+
 // Description visuelle des événements (les valeurs viennent du <select id="evenement">)
 const DESCRIPTIONS_EVENEMENTS = {
     universite: { symbole: "U", styles: "Casual · Sportif" },
@@ -391,7 +395,7 @@ function creerCarteVetement(vetement, index) {
     etiquettes.append(
         creerEtiquette(LIBELLES_CATEGORIES[categorie] || vetement.categorie),
         creerEtiquette(libelleCouleur(vetement.couleur), vetement.couleur),
-        creerEtiquette(vetement.style)
+        creerEtiquette(libelleStyle(vetement.style))
     );
 
     const bouton = creerElement("button", "bouton-supprimer", "Supprimer");
@@ -483,11 +487,155 @@ function mettreAJourApercu() {
 }
 
 // ==========================================
+// PRE-ANALYSE DE LA PHOTO PAR GEMINI
+// ==========================================
+
+function libelleStyle(style) {
+    const valeur = normaliser(style);
+
+    if (!valeur || valeur === "auto") {
+        return "À déterminer";
+    }
+
+    return valeur;
+}
+
+function afficherStatutAnalyse(message, type) {
+    const statut = document.getElementById("statutAnalyse");
+
+    statut.replaceChildren();
+    statut.className = `statut-analyse ${type || ""}`;
+
+    if (type === "en-cours") {
+        const chargeur = creerElement("span", "chargeur-sombre");
+        chargeur.setAttribute("aria-hidden", "true");
+        statut.appendChild(chargeur);
+    }
+
+    statut.appendChild(document.createTextNode(message));
+    statut.hidden = !message;
+}
+
+// Remplit un champ seulement s'il est vide ou déjà suggéré par Gemini
+function suggererValeur(id, valeur, valeurVide) {
+    const element = document.getElementById(id);
+
+    if (!valeur) {
+        return false;
+    }
+
+    const libre = element.value === valeurVide || element.dataset.suggere === "1";
+
+    if (!libre) {
+        return false;
+    }
+
+    // Pour un <select>, vérifier que la valeur existe
+    if (element.tagName === "SELECT" &&
+        !Array.from(element.options).some((option) => option.value === valeur)) {
+        return false;
+    }
+
+    element.value = valeur;
+    element.dataset.suggere = "1";
+    element.closest(".champ").classList.add("suggere");
+    element.closest(".champ").classList.remove("invalide");
+
+    return true;
+}
+
+function effacerSuggestions() {
+    ["nom", "categorie", "couleur", "style"].forEach((id) => {
+        const element = document.getElementById(id);
+        delete element.dataset.suggere;
+        element.closest(".champ").classList.remove("suggere");
+    });
+}
+
+async function preAnalyserPhoto() {
+    const fichier = document.getElementById("photo").files[0];
+
+    preAnalyse = null;
+    compteurPreAnalyse += 1;
+    const numero = compteurPreAnalyse;
+
+    if (!fichier) {
+        afficherStatutAnalyse("", "");
+        return;
+    }
+
+    const extensions = [".jpg", ".jpeg", ".png", ".webp"];
+    const nom = fichier.name.toLowerCase();
+
+    if (!extensions.some((ext) => nom.endsWith(ext)) ||
+        fichier.size > 5 * 1024 * 1024) {
+        afficherStatutAnalyse(
+            "Photo non analysée (JPG, PNG ou WEBP de 5 Mo maximum).",
+            "erreur"
+        );
+        return;
+    }
+
+    afficherStatutAnalyse("Gemini analyse la photo…", "en-cours");
+
+    try {
+        const formData = new FormData();
+        formData.append("photo", fichier);
+
+        const resultat = await appelerAPI("analyser-photo", {
+            method: "POST",
+            body: formData
+        });
+
+        // Une autre photo a été choisie entre-temps : ignorer ce résultat
+        if (numero !== compteurPreAnalyse) {
+            return;
+        }
+
+        preAnalyse = {
+            fichier,
+            analyse: resultat.analyse,
+            modele: resultat.modele,
+            signature: resultat.signature
+        };
+
+        const s = resultat.suggestions || {};
+
+        suggererValeur("nom", s.nom, "");
+        suggererValeur("categorie", s.categorie, "");
+        suggererValeur("couleur", s.couleur, "");
+        suggererValeur("style", s.style, "auto");
+
+        afficherStatutAnalyse(
+            `✦ Gemini a reconnu : ${resultat.analyse.type_precis}. ` +
+            "Champs suggérés par Gemini — modifiables.",
+            "succes"
+        );
+
+    } catch (error) {
+        if (numero !== compteurPreAnalyse) {
+            return;
+        }
+
+        console.warn("Pré-analyse impossible :", error);
+
+        afficherStatutAnalyse(
+            error && error.status === 422
+                ? "Gemini ne reconnaît pas de vêtement sur cette photo. " +
+                  "Vous pouvez remplir les champs vous-même."
+                : "Analyse indisponible pour le moment : remplissez les " +
+                  "champs vous-même, ou laissez Gemini décider du style.",
+            "erreur"
+        );
+    }
+}
+
+// ==========================================
 // AJOUTER UN VETEMENT DANS AZURE
 // ==========================================
 
 function verifierFormulaire() {
-    const champs = ["nom", "categorie", "couleur", "style"];
+    const champs = ["nom", "categorie", "couleur"];
     const manquants = [];
 
     champs.forEach((id) => {
@@ -513,7 +661,7 @@ function verifierFormulaire() {
         manquants[0].focus();
         return {
             valide: false,
-            message: "Veuillez remplir le nom, la catégorie, la couleur et le style."
+            message: "Veuillez remplir le nom, la catégorie et la couleur."
         };
     }
 
@@ -605,12 +753,19 @@ async function enregistrerVetement(event) {
                 .value,
 
             style: document.getElementById("style")
-                .value,
+                .value || "auto",
 
             photo: upload.filename
         };
 
         // 3. Enregistrer dans Azure Table Storage
+
+        // Pré-analyse signée par le serveur : évite de rappeler Gemini
+        if (preAnalyse && preAnalyse.fichier === fichier) {
+            vetement.analyse = preAnalyse.analyse;
+            vetement.modele_analyse = preAnalyse.modele;
+            vetement.signature_analyse = preAnalyse.signature;
+        }
 
         const ajout = await appelerAPI(
             "ajouter-vetement",
@@ -628,7 +783,7 @@ async function enregistrerVetement(event) {
         // 4. Gemini analyse la photo (une seule fois).
         //    Un échec ne bloque pas l'ajout : le vêtement est déjà enregistré.
 
-        if (ajout && ajout.id) {
+        if (ajout && ajout.id && !ajout.analyse_enregistree) {
             libelle.textContent = "Gemini analyse la photo…";
 
             try {
@@ -651,6 +806,9 @@ async function enregistrerVetement(event) {
 
         formulaire.reset();
         mettreAJourApercu();
+        preAnalyse = null;
+        effacerSuggestions();
+        afficherStatutAnalyse("", "");
 
         await afficherVetements();
 
@@ -1089,7 +1247,7 @@ function afficherDetailsVetement(vetement) {
     const lignes = [
         ["Catégorie", vetement.categorie],
         ["Couleur", vetement.couleur],
-        ["Style", vetement.style]
+        ["Style", libelleStyle(vetement.style)]
     ];
 
     lignes.forEach(([libelle, valeur]) => {
@@ -1246,7 +1404,10 @@ async function initialiserApplication() {
     const champPhoto = document.getElementById("photo");
     const zonePhoto = document.querySelector(".zone-photo");
 
-    champPhoto.addEventListener("change", mettreAJourApercu);
+    champPhoto.addEventListener("change", () => {
+        mettreAJourApercu();
+        preAnalyserPhoto();
+    });
     champPhoto.addEventListener("focus", () => zonePhoto.classList.add("focus"));
     champPhoto.addEventListener("blur", () => zonePhoto.classList.remove("focus"));
 
@@ -1272,6 +1433,18 @@ async function initialiserApplication() {
     });
 
     // Retirer l'état d'erreur quand l'utilisateur corrige un champ
+    ["nom", "categorie", "couleur", "style"].forEach((id) => {
+        const element = document.getElementById(id);
+        element.addEventListener("input", () => {
+            delete element.dataset.suggere;
+            element.closest(".champ").classList.remove("suggere");
+        });
+        element.addEventListener("change", () => {
+            delete element.dataset.suggere;
+            element.closest(".champ").classList.remove("suggere");
+        });
+    });
+
     ["nom", "categorie", "couleur", "style"].forEach((id) => {
         const element = document.getElementById(id);
         const effacer = () => element.closest(".champ").classList.remove("invalide");
