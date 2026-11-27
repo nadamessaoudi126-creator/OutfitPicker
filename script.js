@@ -8,6 +8,10 @@ const API_BASE = "https://func-outfitpicker-2026-fzh9g5aza5dmbja5.belgiumcentral
 
 let gardeRobe = [];
 let derniereTenue = null;
+
+// Autres tenues validées renvoyées par Gemini (affichées par « Autre tenue »)
+let alternativesRestantes = [];
+let modeleDerniereTenue = null;
 let urlApercu = null;
 
 // Résultat de la pré-analyse Gemini de la photo choisie (réutilisé à l'ajout)
@@ -940,6 +944,29 @@ async function genererTenue(event) {
         ? derniereTenue.map((vetement) => vetement.id)
         : [];
 
+    // Gemini a déjà proposé d'autres tenues validées : on les affiche
+    // sans nouvel appel (plus rapide et sans consommer de tokens).
+    if (demandeAutre && alternativesRestantes.length > 0) {
+        const suivante = alternativesRestantes.shift();
+        const selection = [
+            suivante.tenue.haut,
+            suivante.tenue.bas,
+            suivante.tenue.chaussures,
+            suivante.tenue.veste
+        ].filter(Boolean);
+
+        afficherTenue(selection);
+        derniereTenue = selection;
+
+        afficherInfosTenue({
+            source: "gemini",
+            modele: modeleDerniereTenue,
+            explication: suivante.explication,
+            note_style: suivante.note_style
+        });
+        return;
+    }
+
     bouton.disabled = true;
     boutonAutre.disabled = true;
 
@@ -986,6 +1013,14 @@ async function genererTenue(event) {
         afficherTenue(selection);
 
         afficherInfosTenue(resultat);
+
+        alternativesRestantes = Array.isArray(resultat.alternatives)
+            ? resultat.alternatives.filter(
+                (alt) => alt && alt.tenue && alt.tenue.haut &&
+                    alt.tenue.bas && alt.tenue.chaussures
+            )
+            : [];
+        modeleDerniereTenue = resultat.modele || null;
 
     } catch (error) {
 
@@ -1079,6 +1114,16 @@ function afficherInfosTenue(resultat) {
     }
 
     infos.appendChild(badge);
+
+    if (parGemini && resultat.note_style) {
+        infos.appendChild(
+            creerElement(
+                "span",
+                "note-style",
+                `Note de style : ${resultat.note_style}/10`
+            )
+        );
+    }
 
     if (resultat.explication) {
         infos.appendChild(
@@ -1349,6 +1394,9 @@ function reinitialiserTenue() {
 
     collage.replaceChildren();
     collage.classList.remove("collage-message", "avec-veste", "sans-veste");
+
+    alternativesRestantes = [];
+    modeleDerniereTenue = null;
 
     const details =
         document.getElementById("detailsVetement");

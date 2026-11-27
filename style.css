@@ -1722,3 +1722,11 @@ select:focus {
     border-color: var(--accent-doux);
     background-color: #fffdf9;
 }
+
+/* Note de style donnée par Gemini */
+.note-style {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+}
