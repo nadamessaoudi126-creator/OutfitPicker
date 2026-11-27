@@ -108,6 +108,11 @@ function urlPhoto(filename) {
     return `${API_BASE}/photo/${encodeURIComponent(filename)}`;
 }
 
+// Version détourée (fond transparent) si elle existe, sinon l'originale
+function urlPhotoVetement(vetement) {
+    return urlPhoto(vetement.photo_detouree || vetement.photo);
+}
+
 async function appelerAPI(route, options = {}) {
     const reponse = await fetch(
         `${API_BASE}/${route}`,
@@ -372,7 +377,7 @@ function creerCarteVetement(vetement, index) {
     const cadre = creerElement("div", "vetement-photo");
 
     const image = document.createElement("img");
-    image.src = urlPhoto(vetement.photo);
+    image.src = urlPhotoVetement(vetement);
     image.alt = vetement.nom;
     image.loading = "lazy";
     cadre.appendChild(image);
@@ -1191,7 +1196,8 @@ function afficherTenue(selection) {
         bouton.type = "button";
 
         bouton.className =
-            `collage-item ${categorie}`;
+            `collage-item ${categorie}` +
+            (vetement.photo_detouree ? " detoure" : "");
 
         bouton.style.setProperty("--i", String(index));
 
@@ -1208,7 +1214,7 @@ function afficherTenue(selection) {
 
         const image = document.createElement("img");
 
-        image.src = urlPhoto(vetement.photo);
+        image.src = urlPhotoVetement(vetement);
         image.alt = vetement.nom;
 
         const nom = creerElement("span", "collage-nom", vetement.nom);
@@ -1271,7 +1277,7 @@ function afficherDetailsVetement(vetement) {
 
     const cadre = creerElement("div", "details-photo");
     const image = document.createElement("img");
-    image.src = urlPhoto(vetement.photo);
+    image.src = urlPhotoVetement(vetement);
     image.alt = "";
     cadre.appendChild(image);
 

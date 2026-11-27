@@ -1757,82 +1757,109 @@ select:focus {
     overflow: hidden;
 }
 
-/* Collage : chaque pièce devient une petite « carte photo » de moodboard,
-   ce qui intègre proprement les photos à fond gris ou coloré. */
+/* =========================================
+   COLLAGE v12 : PIÈCES DÉTOURÉES SUR UN FOND UNIQUE
+   ========================================= */
+
+/* Sans carte : chaque pièce est posée directement sur le papier */
 .collage-item {
-    mix-blend-mode: normal;
-    background: #ffffff;
-    padding: 6px;
-    border-radius: 10px;
-    box-shadow:
-        0 1px 2px rgba(48, 39, 32, 0.08),
-        0 14px 28px -16px rgba(48, 39, 32, 0.45);
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
 }
 
-.collage-item img {
-    border-radius: 6px;
+/* Photo détourée (fond transparent) : ombre douce qui suit la forme */
+.collage-item.detoure {
+    mix-blend-mode: normal;
+    filter: drop-shadow(0 10px 12px rgba(48, 39, 32, 0.16));
+}
+
+.collage-item.detoure:hover,
+.collage-item.detoure.selectionne {
+    filter: drop-shadow(0 16px 18px rgba(48, 39, 32, 0.24));
+}
+
+/* Photo non détourée : son fond clair se fond dans le papier */
+.collage-item:not(.detoure) {
+    mix-blend-mode: multiply;
+    filter: none;
 }
 
 .collage-item.selectionne {
-    outline-offset: 4px;
+    outline: 2px dashed var(--accent);
+    outline-offset: 6px;
+    border-radius: 12px;
 }
 
-/* Positions recalculées : marges d'au moins 5 % autour du cadre,
-   rotations plus douces, pour qu'aucune pièce ne soit coupée. */
+/* Disposition « flat-lay » : haut en haut, bas en dessous décalé,
+   chaussures en bas ; rotations très légères, rien hors du cadre. */
 .sans-veste .collage-item.haut {
-    --rot: -3deg;
-    width: 46%;
+    --rot: -2deg;
+    width: 50%;
     height: 40%;
-    left: 6%;
-    top: 6%;
+    left: 8%;
+    top: 5%;
+    right: auto;
+    bottom: auto;
 }
 
 .sans-veste .collage-item.bas {
-    --rot: 2deg;
-    width: 40%;
-    height: 50%;
-    left: 46%;
-    top: 26%;
+    --rot: 1.5deg;
+    width: 46%;
+    height: 52%;
+    left: 44%;
+    top: 31%;
+    right: auto;
+    bottom: auto;
 }
 
 .sans-veste .collage-item.chaussures {
-    --rot: 4deg;
+    --rot: 2deg;
     width: 32%;
-    height: 22%;
-    right: auto;
-    left: 10%;
+    height: 20%;
+    left: 9%;
     bottom: 7%;
+    top: auto;
+    right: auto;
 }
 
 .avec-veste .collage-item.veste {
-    --rot: -4deg;
-    width: 40%;
-    height: 38%;
-    left: 6%;
-    top: 6%;
+    --rot: -2.5deg;
+    width: 42%;
+    height: 44%;
+    left: 4%;
+    top: 5%;
+    right: auto;
+    bottom: auto;
 }
 
 .avec-veste .collage-item.haut {
-    --rot: 3deg;
-    width: 38%;
-    height: 34%;
-    left: 54%;
-    top: 7%;
+    --rot: 2deg;
+    width: 40%;
+    height: 36%;
+    left: 52%;
+    top: 6%;
+    right: auto;
+    bottom: auto;
 }
 
 .avec-veste .collage-item.bas {
-    --rot: -2deg;
-    width: 38%;
-    height: 46%;
-    left: 31%;
-    top: 40%;
+    --rot: -1deg;
+    width: 42%;
+    height: 44%;
+    left: 30%;
+    top: 42%;
+    right: auto;
+    bottom: auto;
 }
 
 .avec-veste .collage-item.chaussures {
-    --rot: 4deg;
+    --rot: 2.5deg;
     width: 26%;
-    height: 20%;
+    height: 18%;
+    left: 70%;
+    bottom: 6%;
+    top: auto;
     right: auto;
-    left: 6%;
-    bottom: 8%;
 }
