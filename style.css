@@ -1730,3 +1730,109 @@ select:focus {
     color: var(--accent);
     letter-spacing: 0.02em;
 }
+
+/* =========================================
+   CORRECTIF v11 : TEXTES ET COLLAGE
+   ========================================= */
+
+/* Les textes générés ne doivent jamais déborder de leur encadré */
+.infos-tenue,
+.explication-tenue,
+.raison-secours,
+.details-vetement,
+.details-vetement p,
+.details-vu-gemini,
+.collage-erreur,
+.vu-par-gemini {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.explication-tenue {
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Collage : chaque pièce devient une petite « carte photo » de moodboard,
+   ce qui intègre proprement les photos à fond gris ou coloré. */
+.collage-item {
+    mix-blend-mode: normal;
+    background: #ffffff;
+    padding: 6px;
+    border-radius: 10px;
+    box-shadow:
+        0 1px 2px rgba(48, 39, 32, 0.08),
+        0 14px 28px -16px rgba(48, 39, 32, 0.45);
+}
+
+.collage-item img {
+    border-radius: 6px;
+}
+
+.collage-item.selectionne {
+    outline-offset: 4px;
+}
+
+/* Positions recalculées : marges d'au moins 5 % autour du cadre,
+   rotations plus douces, pour qu'aucune pièce ne soit coupée. */
+.sans-veste .collage-item.haut {
+    --rot: -3deg;
+    width: 46%;
+    height: 40%;
+    left: 6%;
+    top: 6%;
+}
+
+.sans-veste .collage-item.bas {
+    --rot: 2deg;
+    width: 40%;
+    height: 50%;
+    left: 46%;
+    top: 26%;
+}
+
+.sans-veste .collage-item.chaussures {
+    --rot: 4deg;
+    width: 32%;
+    height: 22%;
+    right: auto;
+    left: 10%;
+    bottom: 7%;
+}
+
+.avec-veste .collage-item.veste {
+    --rot: -4deg;
+    width: 40%;
+    height: 38%;
+    left: 6%;
+    top: 6%;
+}
+
+.avec-veste .collage-item.haut {
+    --rot: 3deg;
+    width: 38%;
+    height: 34%;
+    left: 54%;
+    top: 7%;
+}
+
+.avec-veste .collage-item.bas {
+    --rot: -2deg;
+    width: 38%;
+    height: 46%;
+    left: 31%;
+    top: 40%;
+}
+
+.avec-veste .collage-item.chaussures {
+    --rot: 4deg;
+    width: 26%;
+    height: 20%;
+    right: auto;
+    left: 6%;
+    bottom: 8%;
+}
